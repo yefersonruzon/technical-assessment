@@ -18,6 +18,7 @@ interface ProductsInterface {
 }
 
 interface MessageInterface {
+    id: string;
     message: string;
     sender: "bot" | "user";
     hour: string;
@@ -25,9 +26,15 @@ interface MessageInterface {
     showRecommendations: boolean;
 }
 
+// Generate unique ID for each message
+const generateUniqueId = () => {
+  return Math.random().toString(36).substring(2, 9);
+};
+
 // Initial messages
 const InitialState: MessageInterface[] = [
-    {
+    {   
+        id: generateUniqueId(),
         message: "Hello! I'm Wizybot how can i help you today?",
         sender: "bot",
         hour: new Date().toLocaleTimeString("en-US", {
@@ -48,7 +55,8 @@ export default function Chat() {
     // Bot typing state
     const [isBotTyping, setIsBotTyping] = useState(false);
     // Recommendations 
-    const [recommendedProducts, setRecommendedProducts] = useState<ProductsInterface[]>([]);
+    const [recommendedProducts, setRecommendedProducts] = useState<{ [messageId: string]: ProductsInterface[] }>({});
+    // Recommended products
     // Messages state
     const [messages, setMessages] = useState([...InitialState]);
     // Bot responses
@@ -58,6 +66,7 @@ export default function Chat() {
         "sure!!! tell me if you need a product",
     ];
 
+    // Handle send message
     const handleSendMessage = useCallback(() => {
         if (newMessage.trim().length > 0) {
           const now = new Date();
@@ -74,7 +83,7 @@ export default function Chat() {
           setTimeout( async () =>  {
             let botResponse;
             let botMessage;
-
+            const botMessageId = generateUniqueId();
             // Check if the user message is "I want product recommendations"
             if (newMessage.trim() === "I want product recommendations") {
               // Logic for generating product recommendations
@@ -93,7 +102,10 @@ export default function Chat() {
 
               // Execute the function immediately
               const recommendations = await loadRecommendationsData();
-              setRecommendedProducts(recommendations);
+              setRecommendedProducts(prevProducts => ({
+                ...prevProducts,
+                [botMessageId]: recommendations
+              }));
 
               botResponse = "I can help you with product recommendations! Here are some of our top picks Which category interests you the most?";
               botMessage = { 
@@ -102,8 +114,8 @@ export default function Chat() {
                 hour: hour, 
                 date: date, 
                 showRecommendations: true,
+                id: botMessageId,
               };
-              console.log(recommendations);
             } else {
               const randomIndex = Math.floor(Math.random() * botResponses.length);
               botResponse = botResponses[randomIndex];
@@ -112,10 +124,20 @@ export default function Chat() {
                 sender: 'bot', 
                 hour: hour, 
                 date: date,
+                id: botMessageId,
+                showRecommendations: false,
               };
             }
             
-            setMessages(prevMessages => [...prevMessages, botMessage as MessageInterface]);
+            setMessages(prevMessages => {
+              const newMessages = [...prevMessages, botMessage as MessageInterface];
+              // Sort messages by date and time, oldest first
+              return newMessages.sort((a, b) => {
+                const dateA = new Date(`${a.date} ${a.hour}`);
+                const dateB = new Date(`${b.date} ${b.hour}`);
+                return dateA.getTime() - dateB.getTime();
+              });
+            });
             setIsBotTyping(false);
           }, 3000);
         }
