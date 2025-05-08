@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Message from "../atoms/Message"
 import ChatHeader from "../molecules/ChatHeader"
 import MessageInput from "../molecules/MessageInput"
@@ -181,7 +181,7 @@ export default function Chat() {
     };
 
     return (
-        <div className="w-md py-3 bg-bg rounded-md border border-details">
+        <div className="w-md max-md:w-xs py-3 z-50 bg-bg rounded-md border border-details">
             <ChatHeader resetChat={clearChat} chatName='Wizybot' />
             <Message isBotTyping={isBotTyping} recommendedProducts={recommendedProducts} messages={messages} />
             <MessageInput onSendMessage={handleSendMessage} onInputChange={handleInputChange} inputValue={newMessage} />
