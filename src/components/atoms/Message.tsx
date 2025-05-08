@@ -38,14 +38,19 @@ function MessageBubble({ message, hour, date, sender, showRecommendations, recom
             </div>
             {
                 showRecommendations && recommendedProducts && recommendedProducts.length > 0 && (
-                    <div className="flex gap-3 max-w-full h-28 min-h-48 overflow-hidden overflow-x-scroll">
+                    <div className="flex gap-3 max-w-full h-28 min-h-28 overflow-hidden overflow-x-scroll">
                         {
                             recommendedProducts.map((item) => (
-                                <div key={item.id} className="bg-secondary relative min-w-sm max-w-sm rounded-md py-2 px-3 flex gap-2 w-fit">
+                                <div key={item.id} className="bg-secondary overflow-hidden relative min-w-sm max-w-sm rounded-md py-2 px-3 flex gap-2 w-fit">
                                     <img src={item.imageUrl} alt={item.displayTitle} className="w-auto aspect-square h-full rounded-md" />
                                     <div className="flex-col flex">
                                         <h3 className="text-sm">{item.displayTitle}</h3>
-                                        <p className="text-xs text-gray-300">{item.embeddingText}</p>
+                                        <p className="text-xs text-gray-300">2.99$</p>
+                                        <a href={item.url} target="_blank">
+                                            <button className="text-xs text-secondary absolute bottom-2 rounded-sm py-1 w-[67%] bg-white">
+                                                View Product
+                                            </button>
+                                        </a>
                                     </div>
                                 </div>
                             ))

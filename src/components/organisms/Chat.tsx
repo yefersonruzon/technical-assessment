@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Message from "../atoms/Message"
 import ChatHeader from "../molecules/ChatHeader"
 import MessageInput from "../molecules/MessageInput"
@@ -54,17 +54,42 @@ export default function Chat() {
     const [newMessage, setNewMessage] = useState('');
     // Bot typing state
     const [isBotTyping, setIsBotTyping] = useState(false);
-    // Recommendations 
-    const [recommendedProducts, setRecommendedProducts] = useState<{ [messageId: string]: ProductsInterface[] }>({});
-    // Recommended products
+    
+    // Recommendations  
+    const [recommendedProducts, setRecommendedProducts] = useState<{ [messageId: string]: ProductsInterface[] }>(() => {
+        const messages = JSON.parse(sessionStorage.getItem('chatMessages') || '[]');
+        const recommendations = JSON.parse(sessionStorage.getItem('chatRecommendations') || '{}');
+
+        return Object.entries(recommendations).reduce((acc, [key, value]) => {
+            if (messages.find((msg: MessageInterface) => msg.id === key && msg.showRecommendations)) {
+                (acc as Record<string, ProductsInterface[]>)[key] = value as ProductsInterface[];
+            }
+            return acc;
+        }, {});
+    });
+
     // Messages state
-    const [messages, setMessages] = useState([...InitialState]);
+    const [messages, setMessages] = useState(() => {
+        const savedMessages = sessionStorage.getItem('chatMessages');
+        return savedMessages ? JSON.parse(savedMessages) : [...InitialState];
+    });
     // Bot responses
     const botResponses = [
         "Wizybot is here!",
         "How can i help you today?",
         "sure!!! tell me if you need a product",
     ];
+
+    // Function to clear chat messages 
+    const clearChat = useCallback(() => {
+        setMessages([...InitialState]);
+        setRecommendedProducts({});
+        setNewMessage('');
+        setIsBotTyping(false);
+        // Clear chat data from session storage
+        sessionStorage.removeItem('chatMessages');
+        sessionStorage.removeItem('chatRecommendations');
+    }, []);
 
     // Handle send message
     const handleSendMessage = useCallback(() => {
@@ -74,7 +99,7 @@ export default function Chat() {
           const date = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
           const userMessage = { message: newMessage, sender: 'user', hour, date };
 
-          setMessages(prevMessages => [...prevMessages, userMessage as MessageInterface]);
+          setMessages((prevMessages: MessageInterface[]) => [...prevMessages, userMessage as MessageInterface]);
           setNewMessage('');
     
           // Simulate bot response after delay
@@ -101,11 +126,14 @@ export default function Chat() {
               };
 
               // Execute the function immediately
-              const recommendations = await loadRecommendationsData();
-              setRecommendedProducts(prevProducts => ({
-                ...prevProducts,
+                const recommendations = await loadRecommendationsData();
+              const newRecommendations = {
+                ...recommendedProducts,
                 [botMessageId]: recommendations
-              }));
+              };
+              setRecommendedProducts(newRecommendations);
+              // Store recommendations immediately
+              sessionStorage.setItem('chatRecommendations', JSON.stringify(newRecommendations));
 
               botResponse = "I can help you with product recommendations! Here are some of our top picks Which category interests you the most?";
               botMessage = { 
@@ -129,14 +157,18 @@ export default function Chat() {
               };
             }
             
-            setMessages(prevMessages => {
+            setMessages((prevMessages: MessageInterface[]) => {
               const newMessages = [...prevMessages, botMessage as MessageInterface];
               // Sort messages by date and time, oldest first
-              return newMessages.sort((a, b) => {
+              const sortedMessages = newMessages.sort((a, b) => {
                 const dateA = new Date(`${a.date} ${a.hour}`);
                 const dateB = new Date(`${b.date} ${b.hour}`);
                 return dateA.getTime() - dateB.getTime();
               });
+              
+              // Store messages in sessionStorage
+              sessionStorage.setItem('chatMessages', JSON.stringify(sortedMessages));
+              return sortedMessages;
             });
             setIsBotTyping(false);
           }, 3000);
@@ -150,7 +182,7 @@ export default function Chat() {
 
     return (
         <div className="w-md py-3 bg-bg rounded-md border border-details">
-            <ChatHeader chatName='Wizybot' />
+            <ChatHeader resetChat={clearChat} chatName='Wizybot' />
             <Message isBotTyping={isBotTyping} recommendedProducts={recommendedProducts} messages={messages} />
             <MessageInput onSendMessage={handleSendMessage} onInputChange={handleInputChange} inputValue={newMessage} />
         </div>
