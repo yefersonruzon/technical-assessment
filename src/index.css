@@ -32,6 +32,7 @@
   }
 }
 
+/* message burble details */
 .clip_triangle{
   &.bot::after{
     content: "";
@@ -52,5 +53,38 @@
     height: 10px;
     background: var(--color-primary);
     clip-path: polygon(100% 0, 0 100%, 0 0);
+  }
+}
+
+/* messages load response */
+.animation_load_messages{
+  &>span{
+    animation: infinite .8s cubic-bezier(0.175, 0.885, 0.32, 1.175) animation_load_message;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    display: inline-block;
+    &:nth-child(1){
+      animation-delay: 0.1s;
+    }
+    &:nth-child(2){
+      animation-delay: 0.2s;
+    }
+    &:nth-child(3){
+      animation-delay: 0.3s;
+    }
+  }
+}
+
+@keyframes animation_load_message {
+  0%{
+    transform: translateY(0);
+  }
+  50%{
+    transform: translateY(-3px);
+  }
+  100%{
+    transform: translateY(1px);
   }
 }
